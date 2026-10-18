@@ -1,0 +1,332 @@
+{
+  "name": "cog-second-brain",
+  "version": "3.15.0",
+  "description": "Self-evolving second brain with 36 AI agent skills, 10 agents, and people CRM. Closed-loop harness release: a V-model verification lifecycle (spec to evidence, criterion-traced checkpoints), read-only verifier agents that observe artifacts instead of trusting worker summaries, risk lanes, multi-session ultragoals with a north-star acceptance gate, plus craft skills for writing, visual work, and a paired anti-slop design system for marketing and product UI. Inspired by Garry Tan's gstack specialist sessions, gbrain knowledge patterns, and dwarves-kit closed-loop execution. Works with Claude Code, Antigravity, Cursor, Kiro, Gemini CLI, Codex, and any markdown-reading agent.",
+  "author": {
+    "name": "Huy Tieu",
+    "url": "https://github.com/huytieu"
+  },
+  "homepage": "https://github.com/huytieu/COG-second-brain",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/huytieu/COG-second-brain"
+  },
+  "license": "MIT",
+  "keywords": [
+    "second-brain",
+    "knowledge-management",
+    "obsidian",
+    "ai-agents",
+    "productivity",
+    "garry-tan",
+    "gstack",
+    "gbrain",
+    "worker-agents",
+    "people-crm",
+    "braindump",
+    "daily-brief",
+    "team-intelligence",
+    "claude-code",
+    "antigravity",
+    "cursor",
+    "kiro",
+    "gemini-cli",
+    "codex",
+    "agentic",
+    "self-evolving",
+    "personal-intelligence",
+    "note-taking",
+    "specialist-sessions",
+    "loop-engineering",
+    "agent-loop",
+    "memory-hygiene",
+    "runtime-trust",
+    "content-factory",
+    "verification",
+    "skill-distillation",
+    "v-model",
+    "closed-loop",
+    "verification-harness",
+    "evidence-ledger",
+    "ultragoal",
+    "risk-lanes",
+    "verifier-agents",
+    "retrospective",
+    "no-ai-slop",
+    "data-viz",
+    "design-systems",
+    "ui-ux",
+    "anti-slop",
+    "product-design"
+  ],
+  "category": "productivity",
+  "tags": [
+    "knowledge-management",
+    "obsidian",
+    "second-brain",
+    "ai-agents",
+    "productivity",
+    "garry-tan",
+    "gstack",
+    "gbrain",
+    "worker-agents",
+    "people-crm",
+    "claude-code",
+    "cursor",
+    "specialist-sessions"
+  ],
+  "skills": [
+    {
+      "name": "onboarding",
+      "path": ".claude/skills/onboarding/SKILL.md",
+      "description": "Personalize COG for your workflow - creates profile, interests, and watchlist files (run this first!)"
+    },
+    {
+      "name": "braindump",
+      "path": ".claude/skills/braindump/SKILL.md",
+      "description": "Quick capture of raw thoughts with intelligent domain classification and competitive intelligence extraction"
+    },
+    {
+      "name": "daily-brief",
+      "path": ".claude/skills/daily-brief/SKILL.md",
+      "description": "Generate personalized news intelligence with verified sources (7-day freshness requirement)"
+    },
+    {
+      "name": "weekly-checkin",
+      "path": ".claude/skills/weekly-checkin/SKILL.md",
+      "description": "Cross-domain pattern analysis and strategic reflection for weekly review"
+    },
+    {
+      "name": "knowledge-consolidation",
+      "path": ".claude/skills/knowledge-consolidation/SKILL.md",
+      "description": "Build frameworks from scattered insights across all braindumps and notes"
+    },
+    {
+      "name": "url-dump",
+      "path": ".claude/skills/url-dump/SKILL.md",
+      "description": "Quick capture URLs with automatic content extraction, insights, and categorization into knowledge booklets"
+    },
+    {
+      "name": "loop-engineering",
+      "path": ".claude/skills/loop-engineering/SKILL.md",
+      "description": "Shared loop-engineering reference for iterative skills - the agent loop, deterministic verifiers, termination conditions, in-loop context management, and named patterns"
+    },
+    {
+      "name": "team-brief",
+      "path": ".claude/skills/team-brief/SKILL.md",
+      "description": "Cross-reference GitHub, Linear, Slack, PostHog, meetings, and braindumps into a daily team intelligence brief with Linear sync-back"
+    },
+    {
+      "name": "meeting-transcript",
+      "path": ".claude/skills/meeting-transcript/SKILL.md",
+      "description": "Process meeting recordings into structured decisions, action items, and team dynamics"
+    },
+    {
+      "name": "comprehensive-analysis",
+      "path": ".claude/skills/comprehensive-analysis/SKILL.md",
+      "description": "Deep 7-day analysis for weekly reviews, board prep, or strategic planning"
+    },
+    {
+      "name": "scout",
+      "path": ".claude/skills/scout/SKILL.md",
+      "description": "Triage a URL or tool (verify, classify, and check fit) before deciding whether to save it"
+    },
+    {
+      "name": "update-cog",
+      "path": ".claude/skills/update-cog/SKILL.md",
+      "description": "Check for and apply upstream COG framework updates without touching personal content"
+    },
+    {
+      "name": "memory-hygiene",
+      "path": ".claude/skills/memory-hygiene/SKILL.md",
+      "description": "Periodic trust sweep of persistent memory - re-verify environment-dependent claims, stamp last_verified + confidence, propose archiving drifted entries"
+    },
+    {
+      "name": "content-factory",
+      "path": ".claude/skills/content-factory/SKILL.md",
+      "description": "Autonomous content pipeline - scout announcements, triage by trend momentum and personal angle, produce and publish with ledger dedup, volume caps, and post-condition verification"
+    },
+    {
+      "name": "auto-research",
+      "path": ".claude/skills/auto-research/SKILL.md",
+      "description": "Deep strategic research engine with parallel research threads and actionable analysis"
+    },
+    {
+      "name": "create-user-story",
+      "path": ".claude/skills/create-user-story/SKILL.md",
+      "description": "Create user stories with duplicate checking across Linear, GitHub Issues, or Jira"
+    },
+    {
+      "name": "generate-prd",
+      "path": ".claude/skills/generate-prd/SKILL.md",
+      "description": "Draft PRDs with approval gate before publishing to Confluence or Notion"
+    },
+    {
+      "name": "generate-release-notes",
+      "path": ".claude/skills/generate-release-notes/SKILL.md",
+      "description": "Generate release notes from GitHub milestones, Linear cycles, or manual input"
+    },
+    {
+      "name": "export-open-issues",
+      "path": ".claude/skills/export-open-issues/SKILL.md",
+      "description": "Audit and export open issues from any project tracker"
+    },
+    {
+      "name": "publish-to-confluence",
+      "path": ".claude/skills/publish-to-confluence/SKILL.md",
+      "description": "Publish vault markdown files to Confluence"
+    },
+    {
+      "name": "update-knowledge-base",
+      "path": ".claude/skills/update-knowledge-base/SKILL.md",
+      "description": "Maintain product knowledge base from releases and feature updates"
+    },
+    {
+      "name": "closed-loop",
+      "path": ".claude/skills/closed-loop/SKILL.md",
+      "description": "V-model execute pipeline - plan, build, component verify, integration verify, acceptance; the worker never grades its own homework and every evidence row traces to an AC-n criterion"
+    },
+    {
+      "name": "ultragoal",
+      "path": ".claude/skills/ultragoal/SKILL.md",
+      "description": "Run a goal too big for one session as a chain of phases, each its own full closed-loop run, with cross-session state and a final north-star acceptance gate"
+    },
+    {
+      "name": "harvest",
+      "path": ".claude/skills/harvest/SKILL.md",
+      "description": "Capture durable session learnings, stage them for human promotion into knowledge, and propose skill/CLAUDE.md patches - never writes durable knowledge unapproved"
+    },
+    {
+      "name": "retro",
+      "path": ".claude/skills/retro/SKILL.md",
+      "description": "CP-7 retrospective - audit checkpoints, evidence quality, and action items; closes the V-model cycle and feeds the next run"
+    },
+    {
+      "name": "review-cockpit",
+      "path": ".claude/skills/review-cockpit/SKILL.md",
+      "description": "One living review document per multi-item session - cockpit header plus per-item cards you approve or request changes on directly in the doc"
+    },
+    {
+      "name": "no-ai-slop",
+      "path": ".claude/skills/no-ai-slop/SKILL.md",
+      "description": "Edit drafts into sharper, more human writing while preserving personal voice, or detect AI-slop patterns without rewriting"
+    },
+    {
+      "name": "editorial-illustrations",
+      "path": ".claude/skills/editorial-illustrations/SKILL.md",
+      "description": "Generative guide for meaning-carrying editorial data-illustrations - teaches the claim-to-geometry method, renders self-contained theme-aware HTML/SVG figures"
+    },
+    {
+      "name": "data-forms",
+      "path": ".claude/skills/data-forms/SKILL.md",
+      "description": "Pick the right form for a dataset so the finding lands in three seconds - 20+ chart and diagram forms with when-to-use, failure modes, and encoding discipline"
+    },
+    {
+      "name": "museum-art",
+      "path": ".claude/skills/museum-art/SKILL.md",
+      "description": "Source authentic high-res public-domain artwork from museum open-access APIs instead of AI-generated or generic-stock imagery"
+    },
+    {
+      "name": "daily-journal",
+      "path": ".claude/skills/daily-journal/SKILL.md",
+      "description": "A passive daily work journal the agent keeps for you - appends entries after meaningful work, runs a guided reflection on request"
+    },
+    {
+      "name": "taste-skill",
+      "path": ".claude/skills/taste-skill/SKILL.md",
+      "description": "Anti-slop frontend skill for landing pages, portfolios, and redesigns - reads the brief, states a design read, and ships interfaces that do not look templated"
+    },
+    {
+      "name": "product-ui-taste",
+      "path": ".claude/skills/product-ui-taste/SKILL.md",
+      "description": "Anti-slop skill for dense product surfaces (dashboards, tables, forms, wizards, admin consoles) - frame-first, correct at every edge case real data produces"
+    },
+    {
+      "name": "slop-gate",
+      "description": "Refuse AI-slop tells in anything about to be written, published, or sent; runs in CI or as a hook",
+      "path": ".claude/skills/slop-gate/SKILL.md"
+    },
+    {
+      "name": "voice-baseline",
+      "description": "Measure the words and sentence shapes you over-use so an agent stops amplifying your tics",
+      "path": ".claude/skills/voice-baseline/SKILL.md"
+    },
+    {
+      "name": "release-video",
+      "path": ".claude/skills/release-video/SKILL.md",
+      "description": "Turn a product release into a motion recap video and explained per-feature demos: deterministic HTML scenes, sound effects tied to motion, music composed to the timeline"
+    }
+  ],
+  "metadata": {
+    "pluginRoot": ".",
+    "architecture": "multi-agent-skill-pack",
+    "features": [
+      "Self-evolving intelligence with pattern recognition",
+      "Self-healing system with auto-updating cross-references",
+      "Verification-first approach (no AI hallucinations)",
+      "Privacy-first architecture with strict domain separation",
+      "Plain text markdown files (no database, no vendor lock-in)",
+      "Multi-device sync via iCloud (iPhone, iPad, Mac)",
+      "Git version control for tracking thinking evolution",
+      "Agent-surface validator for manifest/docs consistency",
+      "Worker agent architecture with model routing (Sonnet workers, Opus lead)",
+      "People CRM with tiered enrichment and evidence-based profiles",
+      "Runtime trust: memory-hygiene sweeps with last_verified + confidence stamps",
+      "Skill post-condition checks - observe the mutated artifact before reporting success",
+      "Skill distillation pattern: explore once with a strong model, execute cheap with a small one",
+      "V-model closed loop: decompose to falsifiable criteria, verify with evidence traced back to each one",
+      "Read-only verifier agents (task-verifier, integration-verifier) that observe artifacts, not worker summaries",
+      "Risk lanes: ceremony scales with blast radius instead of applying uniformly",
+      "Ultragoals: multi-session goals with per-phase verification and a final north-star acceptance gate",
+      "Cross-model flagship gate - a different model family catches a different error class",
+      "Paired anti-slop design skills: taste-skill owns marketing surfaces, product-ui-taste owns dense product UI"
+    ],
+    "requirements": {
+      "obsidian": "Recommended for markdown file management",
+      "git": "Optional but recommended for version control and safe updates",
+      "claudeCode": "Recommended for the full 33-skill native experience",
+      "kiro": "Optional - ships 7 native core powers",
+      "geminiCli": "Optional - ships 7 native core commands",
+      "agentsMd": "Universal fallback surface for Codex and other markdown-reading agents"
+    },
+    "installation": {
+      "quickStart": "Clone the repo, cd into COG-second-brain, then run onboarding in your agent of choice",
+      "setupTime": "2-5 minutes",
+      "onboardingTime": "2 minutes",
+      "validation": "Run ./scripts/validate-agent-surface.sh before publishing or after framework updates"
+    },
+    "directoryStructure": {
+      ".claude/skills": "33 Claude Code skills (full surface)",
+      ".claude/agents": "10 agent definitions - 6 workers plus 4 read-only verifiers",
+      ".claude/roles": "7 role packs for personalized skill and integration recommendations",
+      ".kiro/powers": "7 Kiro powers (core workflows)",
+      ".gemini/commands": "7 Gemini CLI commands (core workflows)",
+      ".gemini/skills": "Detailed Gemini command playbooks",
+      "AGENTS.md": "Universal command surface for Codex and other agents",
+      "00-inbox": "Temporary processing area with profile and interests files",
+      "01-daily": "Daily briefs and check-ins",
+      "02-personal": "Personal domain (strict privacy)",
+      "03-professional": "Professional domain with competitive watchlist",
+      "04-projects": "Project-specific tracking",
+      "05-knowledge": "Consolidated insights and patterns",
+      ".claude/lib": "Harness shell helpers (checkpoint recorder, risk-lane classifier)",
+      "WORKFLOW.md": "The V-model lifecycle: checkpoints, gate classes, evidence contract"
+    },
+    "skillArchitecture": {
+      "type": "agent-skills",
+      "skills": 33,
+      "workerAgents": 10,
+      "rolePacks": 7,
+      "invocation": "model-invoked",
+      "progressiveDisclosure": true,
+      "nativeSurfaces": {
+        "claudeCode": 33,
+        "antigravity": 33,
+        "kiro": 7,
+        "geminiCli": 7,
+        "agentsMd": 33
+      },
+      "description": "Self-contained skills with worker delegation and a read-only verification layer, full Claude Code and Antigravity surfaces, core native Kiro/Gemini surfaces, and AGENTS.md as the universal fallback"
+    }
+  }
+}
