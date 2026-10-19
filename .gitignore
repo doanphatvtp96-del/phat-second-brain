@@ -12,6 +12,12 @@
 .DS_Store
 Thumbs.db
 
+# Local credentials
+.env
+.env.*
+!.env.example
+!.env.sample
+
 # Personal Content — NOT ignored by default
 # The update script (cog-update.sh) uses file-by-file extraction, not git merge,
 # so there is no risk of merge conflicts with your personal content.
@@ -55,6 +61,3 @@ Thumbs.db
 .github/SUBMISSION-CHECKLIST.md
 .github/SUBMISSION-TEMPLATES.md
 .github/MARKETPLACE.md
-
-# Local environment and server credentials
-.env
