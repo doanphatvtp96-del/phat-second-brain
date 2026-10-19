@@ -55,3 +55,6 @@ Thumbs.db
 .github/SUBMISSION-CHECKLIST.md
 .github/SUBMISSION-TEMPLATES.md
 .github/MARKETPLACE.md
+
+# Local environment and server credentials
+.env

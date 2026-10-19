@@ -2,6 +2,19 @@
 
 > Opt-in verification harness: `WORKFLOW.md` · Universal surface: `AGENTS.md`
 
+## Runtime Environment (ALWAYS APPLY, every session)
+
+This vault runs in two environments: `laptop` and `server`. The `ENVIRONMENT` variable in `.env` tells the agent which one it is in.
+
+- At session start, read only that line: `grep '^ENVIRONMENT=' .env`. Do not print or read the other values in `.env`.
+- Valid values are `laptop` and `server`. Use the value for every action that depends on the machine: paths, installed tools, GUI or browser access, sync, and long-running processes.
+- If `.env` is missing, the variable is missing, or the value is not valid, stop and ask the user. Do not guess the environment.
+- State the detected environment once in your first reply of the session.
+- `laptop` is the macOS machine where the user edits the vault. Applications are not installed here. To work on the server from the laptop, connect over SSH with `SERVER`, `PORT`, `USERNAME`, and `PASSWORD` from `.env`. Never print these values.
+- `server` is the AlmaLinux 8 host where applications are installed and run (Docker Compose stacks in `/opt/services`). Install and deploy applications only on the server.
+- The installed services, paths, ports, and deploy commands are in `05-knowledge/server-services.md`. Read it before you change anything on the server, and update it after each install or change.
+- In zsh, `USERNAME` is a special variable. Do not `source .env` in zsh; read each value with `grep` or load it in `bash`.
+
 ## Response Style (ALWAYS APPLY, every agent, every deliverable)
 
 Optimize for **information gain, not apparent completeness**. The failure mode is framework slop: ordinary reasoning dressed as a consulting memo. Full pattern list: `.claude/skills/no-ai-slop/SKILL.md` § Structural slop.

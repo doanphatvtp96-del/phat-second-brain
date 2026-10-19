@@ -49,6 +49,27 @@ npx skills add huytieu/COG-second-brain
 
 Done — COG is personalized and ready in ~2 minutes. See [SETUP.md](SETUP.md) for optional config (Git sync, iCloud, Obsidian Tasks, etc.).
 
+## Environments
+
+COG runs in two environments: **laptop** and **server**. Each machine declares its environment in `.env` at the repo root:
+
+```bash
+# laptop machine
+ENVIRONMENT=laptop
+
+# server machine
+ENVIRONMENT=server
+```
+
+| Environment | Machine | Role |
+|---|---|---|
+| `laptop` | macOS | You edit the vault here. Agents reach the server over SSH with `SERVER`, `PORT`, `USERNAME`, `PASSWORD` from `.env`. |
+| `server` | AlmaLinux 8 | Applications are installed and run here as Docker Compose stacks in `/opt/services`. |
+
+The services on the server (9router, n8n, Multica), with their paths, ports, and deploy commands, are listed in [`05-knowledge/server-services.md`](05-knowledge/server-services.md).
+
+Agents read `ENVIRONMENT` at the start of every run and act for that machine. If the value is missing or not valid, the agent stops and asks you. The agent rule is in `CLAUDE.md` and `AGENTS.md` (§ Runtime Environment).
+
 ## Agent Support Matrix
 
 COG ships a **full Claude Code surface**, a **full Antigravity surface**, plus **core native surfaces** for Kiro and Gemini CLI, with `AGENTS.md` as the universal fallback for Codex and other markdown-reading agents.

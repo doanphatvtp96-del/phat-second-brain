@@ -6,6 +6,19 @@ This document defines the available commands/skills for AI agents interacting wi
 
 > **Note:** Claude Code users should use `.claude/skills/` and Kiro users should use `.kiro/powers/` for native support. This file serves as universal documentation for all other agents.
 
+## Runtime Environment (read at every run)
+
+COG runs in two environments: `laptop` and `server`. The `ENVIRONMENT` variable in `.env` tells the agent which one it is in.
+
+- At the start of every run, read only that line: `grep '^ENVIRONMENT=' .env`. Do not print or read the other values in `.env`.
+- Valid values are `laptop` and `server`. Use the value for every action that depends on the machine: paths, installed tools, GUI or browser access, sync, and long-running processes.
+- If `.env` is missing, the variable is missing, or the value is not valid, stop and ask the user. Do not guess the environment.
+- State the detected environment once in your first reply of the run.
+- `laptop` is the macOS machine where the user edits the vault. Applications are not installed here. To work on the server from the laptop, connect over SSH with `SERVER`, `PORT`, `USERNAME`, and `PASSWORD` from `.env`. Never print these values.
+- `server` is the AlmaLinux 8 host where applications are installed and run (Docker Compose stacks in `/opt/services`). Install and deploy applications only on the server.
+- The installed services, paths, ports, and deploy commands are in `05-knowledge/server-services.md`. Read it before you change anything on the server, and update it after each install or change.
+- In zsh, `USERNAME` is a special variable. Do not `source .env` in zsh; read each value with `grep` or load it in `bash`.
+
 ## Available Commands
 
 ### /onboarding
