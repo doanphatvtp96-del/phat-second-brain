@@ -1,0 +1,651 @@
+{
+  "name": "Job 2 – Publish (dispatcher)",
+  "nodes": [
+    {
+      "id": "5a477abd-33b4-4289-9eae-1ef1d760252e",
+      "name": "Every 5 minutes",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 5
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "0d7a4756-f2db-4574-9d95-889f3a2c4264",
+      "name": "Read Posts",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "authentication": "serviceAccount",
+        "resource": "sheet",
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "11z24Z6JnQLKsYBg7tX26uk6bs7NqHcgVa1DgBxM69Vk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Posts"
+        },
+        "options": {}
+      },
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleApi": {
+          "id": "LgZTIppDoeaAjJXF",
+          "name": "Google Service Account"
+        }
+      }
+    },
+    {
+      "id": "9e89cf07-759b-4e64-b5df-ab5b1de0f24f",
+      "name": "Read Routes",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        440,
+        0
+      ],
+      "parameters": {
+        "authentication": "serviceAccount",
+        "resource": "sheet",
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "11z24Z6JnQLKsYBg7tX26uk6bs7NqHcgVa1DgBxM69Vk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Routes"
+        },
+        "options": {}
+      },
+      "alwaysOutputData": true,
+      "executeOnce": true,
+      "credentials": {
+        "googleApi": {
+          "id": "LgZTIppDoeaAjJXF",
+          "name": "Google Service Account"
+        }
+      }
+    },
+    {
+      "id": "199b857b-b4fc-4030-97b4-ea36fcfdae69",
+      "name": "Read Targets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        660,
+        0
+      ],
+      "parameters": {
+        "authentication": "serviceAccount",
+        "resource": "sheet",
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "11z24Z6JnQLKsYBg7tX26uk6bs7NqHcgVa1DgBxM69Vk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Targets"
+        },
+        "options": {}
+      },
+      "alwaysOutputData": true,
+      "executeOnce": true,
+      "credentials": {
+        "googleApi": {
+          "id": "LgZTIppDoeaAjJXF",
+          "name": "Google Service Account"
+        }
+      }
+    },
+    {
+      "id": "9048d063-3a77-4d24-ba03-d5b6ae92bcaa",
+      "name": "Read Deliveries",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        880,
+        0
+      ],
+      "parameters": {
+        "authentication": "serviceAccount",
+        "resource": "sheet",
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "11z24Z6JnQLKsYBg7tX26uk6bs7NqHcgVa1DgBxM69Vk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Deliveries"
+        },
+        "options": {}
+      },
+      "alwaysOutputData": true,
+      "executeOnce": true,
+      "credentials": {
+        "googleApi": {
+          "id": "LgZTIppDoeaAjJXF",
+          "name": "Google Service Account"
+        }
+      }
+    },
+    {
+      "id": "9c140fcc-e47f-41c5-9628-1f968110b06a",
+      "name": "Plan",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1100,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const MAX_ATTEMPTS = 3;\nconst STUCK_MINUTES = 30;\nconst ZONE = 'Asia/Ho_Chi_Minh';\nconst now = DateTime.now().setZone(ZONE);\nconst stamp = now.toISO({ suppressMilliseconds: true });\n\nconst rows = (node, key) => $(node).all().map(i => i.json).filter(r => String(r[key] ?? '').trim());\nconst list = v => String(v || '').split(',').map(x => x.trim()).filter(Boolean);\nconst parseTime = s => {\n  let d = DateTime.fromISO(String(s || ''), { zone: ZONE });\n  if (!d.isValid) d = DateTime.fromSQL(String(s || ''), { zone: ZONE });\n  return d;\n};\n\nconst posts = rows('Read Posts', 'id');\nconst routes = Object.fromEntries(rows('Read Routes', 'format').map(r => [String(r.format).trim(), r]));\nconst targets = Object.fromEntries(rows('Read Targets', 'target').map(r => [String(r.target).trim(), r]));\nconst byPost = {};\nfor (const d of rows('Read Deliveries', 'delivery_id')) (byPost[String(d.post_id)] ||= []).push(d);\n\nconst out = [];\nconst postUpdate = (id, status, error = '') => out.push({ json: { kind: 'post_update', row: { id, status, error, updated_at: stamp } } });\nconst deliveryUpdate = row => out.push({ json: { kind: 'delivery_update', row: { ...row, updated_at: stamp } } });\n\nfunction deliver(post, target, attempts) {\n  const delivery_id = post.id + ':' + target;\n  const t = targets[target];\n  const enabled = t && String(t.enabled).trim().toUpperCase() === 'TRUE' && String(t.workflow_id || '').trim();\n  if (!enabled) {\n    deliveryUpdate({ delivery_id, post_id: post.id, target, status: 'Failed', attempts, error: 'target not registered or disabled in Targets' });\n    return;\n  }\n  out.push({ json: {\n    kind: 'deliver',\n    workflow_id: String(t.workflow_id).trim(),\n    delivery_id, post_id: post.id, target, attempts: attempts + 1,\n    format: post.format, title: post.title, content: post.content, media_url: post.media_url,\n    posting_row: { delivery_id, post_id: post.id, target, status: 'Posting', attempts: attempts + 1, updated_at: stamp, error: '' },\n  } });\n}\n\nfor (const p of posts) {\n  const status = String(p.status || '').trim();\n  if (status !== 'Ready' && status !== 'Processing') continue;\n\n  if (status === 'Ready') {\n    const when = parseTime(p.scheduled_at);\n    if (!when.isValid) { postUpdate(p.id, 'Failed', 'invalid scheduled_at: ' + p.scheduled_at); continue; }\n    if (when > now) continue;\n  }\n\n  const names = list(p.targets_override).length ? list(p.targets_override) : list(routes[String(p.format).trim()]?.targets);\n  if (!names.length) { postUpdate(p.id, 'Failed', 'no route for format ' + p.format); continue; }\n  if (status === 'Ready') postUpdate(p.id, 'Processing');\n\n  const existing = Object.fromEntries((byPost[String(p.id)] || []).map(d => [String(d.target).trim(), d]));\n  let finals = 0, posted = 0;\n  for (const target of names) {\n    const d = existing[target];\n    if (!d) { deliver(p, target, 0); continue; }\n    const ds = String(d.status).trim();\n    const attempts = Number(d.attempts || 0);\n    if (ds === 'Posted') { finals++; posted++; continue; }\n    if (ds === 'Failed') { finals++; continue; }\n    if (ds === 'Pending' && attempts < MAX_ATTEMPTS) { deliver(p, target, attempts); continue; }\n    if (ds === 'Pending') { deliveryUpdate({ delivery_id: d.delivery_id, status: 'Failed', error: d.error || 'max attempts reached' }); continue; }\n    if (ds === 'Posting') {\n      const since = parseTime(d.updated_at);\n      if (!since.isValid || now.diff(since, 'minutes').minutes > STUCK_MINUTES) {\n        deliveryUpdate({ delivery_id: d.delivery_id, status: 'Failed', error: 'stuck in Posting; check the platform before retrying' });\n      }\n    }\n  }\n  if (status === 'Processing' && finals === names.length) {\n    postUpdate(p.id, posted === names.length ? 'Done' : posted === 0 ? 'Failed' : 'Partial', posted === names.length ? '' : 'see Deliveries');\n  }\n}\nreturn out;"
+      }
+    },
+    {
+      "id": "1a833abd-abc7-4eae-9493-932d479f7306",
+      "name": "Deliver?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1320,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "fc082fe2-b48f-48b3-8287-beb7e904a21c",
+              "leftValue": "={{ $json.kind }}",
+              "rightValue": "deliver",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "3c82cfb8-1c10-4518-8928-5ce67f3ca52a",
+      "name": "Posting row",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1540,
+        -200
+      ],
+      "parameters": {
+        "jsCode": "return $input.all().map(i => ({ json: i.json.posting_row }));"
+      }
+    },
+    {
+      "id": "54431af8-f283-46e5-8dc6-0225158abdcf",
+      "name": "Mark Posting",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1760,
+        -200
+      ],
+      "parameters": {
+        "authentication": "serviceAccount",
+        "resource": "sheet",
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "11z24Z6JnQLKsYBg7tX26uk6bs7NqHcgVa1DgBxM69Vk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Deliveries"
+        },
+        "options": {},
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [
+            "delivery_id"
+          ],
+          "schema": []
+        }
+      },
+      "credentials": {
+        "googleApi": {
+          "id": "LgZTIppDoeaAjJXF",
+          "name": "Google Service Account"
+        }
+      }
+    },
+    {
+      "id": "347c0c82-d695-4369-afe2-4c8634ec563f",
+      "name": "Run adapter",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.4,
+      "position": [
+        1540,
+        0
+      ],
+      "parameters": {
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.workflow_id }}"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "mode": "each",
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "480cd85a-7e1e-46ea-a56f-86704f8bfd28",
+      "name": "Delivery result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1760,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const MAX_ATTEMPTS = 3;\nconst stamp = DateTime.now().setZone('Asia/Ho_Chi_Minh').toISO({ suppressMilliseconds: true });\nconst sent = $('Deliver?').all(0).map(i => i.json);\nreturn $input.all().map((item, i) => {\n  const r = item.json || {};\n  const d = sent.find(x => x.delivery_id === r.delivery_id) || sent[i];\n  const row = { delivery_id: d.delivery_id, attempts: d.attempts, updated_at: stamp };\n  if (r.ok === true) return { json: { ...row, status: 'Posted', post_url: r.post_url || '', posted_at: stamp, error: '' } };\n  const error = String(r.error && r.error.message ? r.error.message : r.error || 'adapter returned no result').slice(0, 500);\n  const retry = r.retryable !== false && d.attempts < MAX_ATTEMPTS;\n  return { json: { ...row, status: retry ? 'Pending' : 'Failed', error } };\n});"
+      }
+    },
+    {
+      "id": "4134a666-ad00-4cea-9593-05c59dcdc882",
+      "name": "Save result",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1980,
+        0
+      ],
+      "parameters": {
+        "authentication": "serviceAccount",
+        "resource": "sheet",
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "11z24Z6JnQLKsYBg7tX26uk6bs7NqHcgVa1DgBxM69Vk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Deliveries"
+        },
+        "options": {},
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [
+            "delivery_id"
+          ],
+          "schema": []
+        }
+      },
+      "credentials": {
+        "googleApi": {
+          "id": "LgZTIppDoeaAjJXF",
+          "name": "Google Service Account"
+        }
+      }
+    },
+    {
+      "id": "029e8dba-be20-4b0d-bad5-16d82d34ebc8",
+      "name": "Post update?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1540,
+        200
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "e8711dc1-25c0-4066-9e0a-d872fc2f624e",
+              "leftValue": "={{ $json.kind }}",
+              "rightValue": "post_update",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "8c80406f-3741-4345-bfc8-8583e12aa16e",
+      "name": "Post row",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1760,
+        150
+      ],
+      "parameters": {
+        "jsCode": "return $input.all().map(i => ({ json: i.json.row }));"
+      }
+    },
+    {
+      "id": "a60d9f9c-7f2a-4dcd-b4a5-d33557906813",
+      "name": "Update Posts",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1980,
+        150
+      ],
+      "parameters": {
+        "authentication": "serviceAccount",
+        "resource": "sheet",
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "11z24Z6JnQLKsYBg7tX26uk6bs7NqHcgVa1DgBxM69Vk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Posts"
+        },
+        "options": {},
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": []
+        }
+      },
+      "credentials": {
+        "googleApi": {
+          "id": "LgZTIppDoeaAjJXF",
+          "name": "Google Service Account"
+        }
+      }
+    },
+    {
+      "id": "8bf3ebeb-853a-4505-b900-ead3a0c7e19c",
+      "name": "Delivery row",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1760,
+        300
+      ],
+      "parameters": {
+        "jsCode": "return $input.all().map(i => ({ json: i.json.row }));"
+      }
+    },
+    {
+      "id": "0b8f0725-79f1-4b6a-9665-78d462b859eb",
+      "name": "Save delivery",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1980,
+        300
+      ],
+      "parameters": {
+        "authentication": "serviceAccount",
+        "resource": "sheet",
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "11z24Z6JnQLKsYBg7tX26uk6bs7NqHcgVa1DgBxM69Vk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Deliveries"
+        },
+        "options": {},
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [
+            "delivery_id"
+          ],
+          "schema": []
+        }
+      },
+      "credentials": {
+        "googleApi": {
+          "id": "LgZTIppDoeaAjJXF",
+          "name": "Google Service Account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Every 5 minutes": {
+      "main": [
+        [
+          {
+            "node": "Read Posts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Posts": {
+      "main": [
+        [
+          {
+            "node": "Read Routes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Routes": {
+      "main": [
+        [
+          {
+            "node": "Read Targets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Targets": {
+      "main": [
+        [
+          {
+            "node": "Read Deliveries",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Deliveries": {
+      "main": [
+        [
+          {
+            "node": "Plan",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Plan": {
+      "main": [
+        [
+          {
+            "node": "Deliver?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Deliver?": {
+      "main": [
+        [
+          {
+            "node": "Posting row",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Run adapter",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Post update?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Posting row": {
+      "main": [
+        [
+          {
+            "node": "Mark Posting",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run adapter": {
+      "main": [
+        [
+          {
+            "node": "Delivery result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Delivery result": {
+      "main": [
+        [
+          {
+            "node": "Save result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Post update?": {
+      "main": [
+        [
+          {
+            "node": "Post row",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Delivery row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Post row": {
+      "main": [
+        [
+          {
+            "node": "Update Posts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Delivery row": {
+      "main": [
+        [
+          {
+            "node": "Save delivery",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Asia/Ho_Chi_Minh",
+    "saveManualExecutions": true
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "sheetId": "11z24Z6JnQLKsYBg7tX26uk6bs7NqHcgVa1DgBxM69Vk",
+  "webhookId": "573acb0d-0379-4fa6-b576-33c87338b730",
+  "facebook": {
+    "pageId": "107032218841145",
+    "graphVersion": "v26.0"
+  },
+  "credentials": {
+    "googleServiceAccount": "LgZTIppDoeaAjJXF",
+    "facebookGraph": "tqYldlysWaw4WwmH",
+    "webhookHeaderAuth": "VbVVyKszxpQwqDiX"
+  },
+  "workflowIds": {
+    "dryrun": "dTHj6xh0PxGcar9d",
+    "facebook_post": "yUGbx0WdK4TMcgAK",
+    "facebook_reel": "3do6X5CcAWYDaw2I",
+    "job1": "UDIR9hFMuZUpFbhe",
+    "job2": "tFGAyPNNh7GjaYOE"
+  }
+}

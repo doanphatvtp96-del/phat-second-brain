@@ -1,0 +1,214 @@
+{
+  "name": "Adapter – facebook_reel",
+  "nodes": [
+    {
+      "id": "4e4efc80-81e8-45b9-96a6-67e03fc5251c",
+      "name": "Start",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "inputSource": "passthrough"
+      }
+    },
+    {
+      "id": "cae36260-6ebc-4529-a63f-50426ebd4863",
+      "name": "Build request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        0
+      ],
+      "parameters": {
+        "jsCode": "return $input.all().map(i => ({ json: {\n  page_id: \"107032218841145\",\n  graph: 'https://graph.facebook.com/v26.0',\n  rupload: 'https://rupload.facebook.com/video-upload/v26.0',\n  file_url: String(i.json.media_url || '').trim(),\n  description: String(i.json.content || '').trim(),\n} }));"
+      }
+    },
+    {
+      "id": "ebef2e49-910c-4390-a33e-ebd0199e6a9a",
+      "name": "Start upload",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        480,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Build request').first().json.graph + '/' + $('Build request').first().json.page_id + '/video_reels' }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "facebookGraphApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ upload_phase: \"start\" }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
+        }
+      },
+      "onError": "continueRegularOutput",
+      "credentials": {
+        "facebookGraphApi": {
+          "id": "tqYldlysWaw4WwmH",
+          "name": "Facebook - Dien May Toan Phat"
+        }
+      }
+    },
+    {
+      "id": "94a2b4f5-8f45-4583-b809-c63bfcb0331e",
+      "name": "Upload from URL",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        720,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Build request').first().json.rupload + '/' + ($json.body && $json.body.video_id) }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "facebookGraphApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "file_url",
+              "value": "={{ $('Build request').first().json.file_url }}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
+        }
+      },
+      "onError": "continueRegularOutput",
+      "credentials": {
+        "facebookGraphApi": {
+          "id": "tqYldlysWaw4WwmH",
+          "name": "Facebook - Dien May Toan Phat"
+        }
+      }
+    },
+    {
+      "id": "ceb0dffa-6b4b-474a-9598-1d4d2cef8385",
+      "name": "Publish",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        960,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Build request').first().json.graph + '/' + $('Build request').first().json.page_id + '/video_reels' }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "facebookGraphApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ upload_phase: 'finish', video_id: $('Start upload').first().json.body.video_id, video_state: 'PUBLISHED', description: $('Build request').first().json.description }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
+        }
+      },
+      "onError": "continueRegularOutput",
+      "credentials": {
+        "facebookGraphApi": {
+          "id": "tqYldlysWaw4WwmH",
+          "name": "Facebook - Dien May Toan Phat"
+        }
+      }
+    },
+    {
+      "id": "fba91490-d875-4cf6-a25e-b8a3f02dd8ea",
+      "name": "Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        0
+      ],
+      "parameters": {
+        "jsCode": "\nfunction graphResult(res) {\n  if (!res) return { ok: false, error: 'no response', retryable: true };\n  if (res.error && !res.statusCode) {\n    const msg = typeof res.error === 'string' ? res.error : (res.error.message || JSON.stringify(res.error));\n    return { ok: false, error: msg.slice(0, 500), retryable: true };\n  }\n  const status = Number(res.statusCode || 0);\n  const body = res.body || {};\n  if (status >= 200 && status < 300 && !body.error) return { ok: true, body };\n  const e = body.error || {};\n  const transient = e.is_transient || [1, 2, 4, 17, 32, 613].includes(Number(e.code));\n  return {\n    ok: false,\n    error: (`HTTP ${status}: ${e.message || JSON.stringify(body)}`).slice(0, 500),\n    retryable: status >= 500 || status === 429 || Boolean(transient),\n  };\n}\nconst input = $('Start').first().json;\nconst steps = [['start upload', $('Start upload').first().json], ['upload', $('Upload from URL').first().json], ['publish', $('Publish').first().json]];\nfor (const [label, res] of steps) {\n  const r = graphResult(res);\n  if (!r.ok) return [{ json: { delivery_id: input.delivery_id, ok: false, error: label + ': ' + r.error, retryable: r.retryable } }];\n}\nconst videoId = $('Start upload').first().json.body.video_id;\nreturn [{ json: { delivery_id: input.delivery_id, ok: true, post_url: 'https://www.facebook.com/reel/' + videoId } }];"
+      }
+    }
+  ],
+  "connections": {
+    "Start": {
+      "main": [
+        [
+          {
+            "node": "Build request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build request": {
+      "main": [
+        [
+          {
+            "node": "Start upload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Start upload": {
+      "main": [
+        [
+          {
+            "node": "Upload from URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload from URL": {
+      "main": [
+        [
+          {
+            "node": "Publish",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Publish": {
+      "main": [
+        [
+          {
+            "node": "Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Asia/Ho_Chi_Minh",
+    "saveManualExecutions": true
+  }
+}
