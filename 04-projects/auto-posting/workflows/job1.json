@@ -1,0 +1,274 @@
+{
+  "name": "Job 1 – Create post (API)",
+  "nodes": [
+    {
+      "id": "c6cea086-3883-4f82-8f06-3543a67220f6",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "posts",
+        "authentication": "headerAuth",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "webhookId": "573acb0d-0379-4fa6-b576-33c87338b730",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "VbVVyKszxpQwqDiX",
+          "name": "Posts API token"
+        }
+      }
+    },
+    {
+      "id": "d61d766d-0690-489d-a525-df4943276050",
+      "name": "Read Routes",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        240,
+        0
+      ],
+      "parameters": {
+        "authentication": "serviceAccount",
+        "resource": "sheet",
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "11z24Z6JnQLKsYBg7tX26uk6bs7NqHcgVa1DgBxM69Vk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Routes"
+        },
+        "options": {}
+      },
+      "alwaysOutputData": true,
+      "executeOnce": true,
+      "credentials": {
+        "googleApi": {
+          "id": "LgZTIppDoeaAjJXF",
+          "name": "Google Service Account"
+        }
+      }
+    },
+    {
+      "id": "5a139578-7c70-4123-87a8-0a32acc0bfbf",
+      "name": "Validate",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const b = $('Webhook').first().json.body || {};\nconst routes = $('Read Routes').all().map(i => i.json).filter(r => String(r.format || '').trim());\nconst list = v => (Array.isArray(v) ? v : String(v || '').split(',')).map(x => String(x).trim()).filter(Boolean);\nconst fail = error => [{ json: { ok: 'false', error } }];\n\nconst format = String(b.format || '').trim();\nconst route = routes.find(r => String(r.format).trim() === format);\nif (!route) return fail(`unknown format \"${format}\". Known: ${routes.map(r => r.format).join(', ')}`);\n\nconst missing = list(route.required).filter(f => !String(b[f] ?? '').trim());\nif (missing.length) return fail(`missing fields for ${format}: ${missing.join(', ')}`);\n\nlet when = DateTime.now().setZone('Asia/Ho_Chi_Minh');\nif (b.scheduled_at) {\n  when = DateTime.fromISO(String(b.scheduled_at), { zone: 'Asia/Ho_Chi_Minh' });\n  if (!when.isValid) return fail(`invalid scheduled_at \"${b.scheduled_at}\". Use ISO 8601, e.g. 2026-10-21T09:00:00+07:00`);\n}\n\nconst now = DateTime.now().setZone('Asia/Ho_Chi_Minh');\nconst id = 'p_' + now.toFormat('yyyyMMddHHmmss') + '_' + Math.random().toString(36).slice(2, 6);\nreturn [{ json: { ok: 'true', row: {\n  id,\n  created_at: now.toISO({ suppressMilliseconds: true }),\n  format,\n  title: String(b.title || ''),\n  content: String(b.content || ''),\n  media_url: String(b.media_url || ''),\n  scheduled_at: when.toISO({ suppressMilliseconds: true }),\n  targets_override: list(b.targets).join(', '),\n  status: 'Ready',\n  updated_at: now.toISO({ suppressMilliseconds: true }),\n  error: '',\n} } }];"
+      }
+    },
+    {
+      "id": "004243b1-a09b-4db1-9940-aaf027ad4fb8",
+      "name": "Valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        720,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "3afb5b77-e477-4c9a-9e7e-6721796da5e1",
+              "leftValue": "={{ $json.ok }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "4a14cf68-241a-4082-b522-b077c4caff53",
+      "name": "Row",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        960,
+        -100
+      ],
+      "parameters": {
+        "jsCode": "return $input.all().map(i => ({ json: i.json.row }));"
+      }
+    },
+    {
+      "id": "c31c519a-b61d-4cda-8ea2-11ed588e116f",
+      "name": "Append Posts",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1200,
+        -100
+      ],
+      "parameters": {
+        "authentication": "serviceAccount",
+        "resource": "sheet",
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "11z24Z6JnQLKsYBg7tX26uk6bs7NqHcgVa1DgBxM69Vk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Posts"
+        },
+        "options": {},
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": []
+        }
+      },
+      "credentials": {
+        "googleApi": {
+          "id": "LgZTIppDoeaAjJXF",
+          "name": "Google Service Account"
+        }
+      }
+    },
+    {
+      "id": "b06fc7f6-10b7-49f1-aeba-172a331de08c",
+      "name": "Respond 201",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1440,
+        -100
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ ok: true, id: $('Validate').first().json.row.id, status: 'Ready', scheduled_at: $('Validate').first().json.row.scheduled_at }) }}",
+        "options": {
+          "responseCode": 201
+        }
+      }
+    },
+    {
+      "id": "0923e961-3ecf-4b39-9617-4807cd6ff07f",
+      "name": "Respond 400",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        960,
+        100
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ ok: false, error: $json.error }) }}",
+        "options": {
+          "responseCode": 400
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Read Routes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Routes": {
+      "main": [
+        [
+          {
+            "node": "Validate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate": {
+      "main": [
+        [
+          {
+            "node": "Valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Valid?": {
+      "main": [
+        [
+          {
+            "node": "Row",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond 400",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Row": {
+      "main": [
+        [
+          {
+            "node": "Append Posts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append Posts": {
+      "main": [
+        [
+          {
+            "node": "Respond 201",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Asia/Ho_Chi_Minh",
+    "saveManualExecutions": true
+  }
+}

@@ -18,6 +18,7 @@ Only SSH (port `2018`) is open on the public IP. The Buzz relay is public throug
 | Multica frontend | `http://100.110.183.75:3000` | `127.0.0.1:3000` |
 | Multica backend | not exposed; the frontend proxies to it | `127.0.0.1:8080` |
 
+- From `admin-pc` (Windows, tailnet `doanphatvtp96@`), the server is node `ps` at `ps.taildae6a9.ts.net` (`100.110.183.75`). On 2026-10-19, `http://ps.taildae6a9.ts.net:5678/healthz` returned 200 and `/api/v1/workflows` returned 401 without a key. `100.81.58.77` timed out from this PC. [Source: user, chat | 2026-10-19 | confidence: high]
 - Each app binds `127.0.0.1` in its compose file. `tailscale serve --bg --tcp=<port> tcp://127.0.0.1:<port>` forwards the tailnet port to it. Serve rules persist across reboots. Check them with `tailscale serve status`.
 - Docker-published ports skip the iptables `INPUT` chain. A port published as `0.0.0.0` is public even with the firewall on. Never publish an app port on `0.0.0.0` or on the public IP.
 - To add a new app: bind it to `127.0.0.1:<port>` in compose, then run `tailscale serve --bg --tcp=<port> tcp://127.0.0.1:<port>`.

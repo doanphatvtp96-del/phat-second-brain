@@ -1,0 +1,49 @@
+{
+  "name": "Adapter – dryrun",
+  "nodes": [
+    {
+      "id": "232fa2c5-bca6-4132-98d8-3c73a9cb88bb",
+      "name": "Start",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "inputSource": "passthrough"
+      }
+    },
+    {
+      "id": "ebeee91c-0334-4171-868d-940e3ef16a2c",
+      "name": "Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        0
+      ],
+      "parameters": {
+        "jsCode": "return $input.all().map(i => ({ json: {\n  delivery_id: i.json.delivery_id,\n  ok: true,\n  post_url: 'dryrun://' + i.json.delivery_id,\n} }));"
+      }
+    }
+  ],
+  "connections": {
+    "Start": {
+      "main": [
+        [
+          {
+            "node": "Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Asia/Ho_Chi_Minh",
+    "saveManualExecutions": true
+  }
+}
