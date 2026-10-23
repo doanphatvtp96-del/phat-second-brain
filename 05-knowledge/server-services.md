@@ -1,6 +1,6 @@
 ---
 title: Server services
-updated: 2026-10-18
+updated: 2026-10-24
 ---
 
 # Server services
@@ -104,10 +104,26 @@ Only SSH (port `2018`) is open on the public IP. The Buzz relay is public throug
 - Auth flags, membership flags, and `RELAY_OWNER_PUBKEY` are copied from the VTC relay. `BUZZ_REQUIRE_RELAY_MEMBERSHIP=true`, so add members with `docker compose exec relay /usr/local/bin/buzz-admin add-member --pubkey <npub-or-hex>`.
 - Data is in named volumes `phat-relay_postgres-data`, `phat-relay_redis-data`, and `phat-relay_git-data`. Never run `docker compose down -v` or `docker volume prune` for this stack.
 
+## gbrain
+
+- Source: `https://github.com/garrytan/gbrain`, installed with `bun install -g github:garrytan/gbrain` as user `brain`. Version 0.60.405.0, Bun 1.4.4. Binary: `/home/brain/.bun/bin/gbrain`.
+- User `brain` (uid 1001): locked password, no sudo, not in the `docker` group. Linger is on, so its systemd user services run without a login. Run commands as root with `su - brain`.
+- Postgres with pgvector: `/opt/services/gbrain/compose.yml` (project `gbrain`), image `pgvector/pgvector:pg17`, binds `127.0.0.1:5433`, volume `gbrain_postgres-data`. Deploy with `cd /opt/services/gbrain && docker compose up -d --wait`. Never run `docker compose down -v` for this stack.
+- Config: `/home/brain/.gbrain/config.json`. `GBRAIN_DATABASE_URL` is in `/home/brain/.gbrain/env` (mode `600`). Embeddings are off because there is no API key yet. Turn them on with `gbrain embeddings enable --embedding-model <provider:model>` after you add the key to `~/.gbrain/env`.
+- Vault clone: `/home/brain/vault`, branch `master`. The brain is in managed mode, source `default` points to this clone, and Git durability is on. gbrain commits and pushes each page write. Never run `git pull`, `git rebase`, `git reset` or `git checkout` in this clone.
+- GitHub access: deploy key `/home/brain/.ssh/vault_deploy` (title `gbrain@ps`, write access), set in `/home/brain/.ssh/config`. It reaches only this repo. Commit author: `gbrain (ps) <gbrain@ps.taildae6a9.ts.net>`.
+- Services (systemd user units of `brain`, manage them with `su - brain`, then `XDG_RUNTIME_DIR=/run/user/1001 systemctl --user ...`):
+  - `gbrain-autopilot.service`: sync, extract and maintenance every 300 seconds, and the worker that runs the Git commit and push. Log: `/home/brain/.gbrain/autopilot.log`. Remove with `gbrain autopilot --uninstall`.
+  - `gbrain-refresh.timer` and `gbrain-refresh.service`: run `gbrain sources refresh default` every 15 minutes to fast-forward the clone from GitHub. Autopilot does not do this.
+- Status: `gbrain sources writer status default --json` (ownership, Git durability, parked pushes) and `gbrain sources status default`.
+- Database backup before a topology change: `/opt/services/gbrain/backups/gbrain-20261024-0211-before-rebind.dump` (`pg_dump -Fc`).
+- `gbrain sources writer git-durability default --enable` writes a block of rules into `AGENTS.md`. That block uses the gbrain folder layout and says "never pull", which is wrong for the laptop. It was removed from the clone on 2026-10-24. If you run the command again, remove the block again with `git restore AGENTS.md` in the clone before the next refresh.
+- The MCP HTTP server (`gbrain serve --http`) is not installed yet.
+
 ## Secrets and backups
 
 - Generated environment files are stored with mode `600` in each deployment directory.
-- Generated deployment credentials are also stored in `/root/service-secrets/credentials.env` with mode `600`.
+- Generated deployment credentials are also stored in `/root/service-secrets/credentials.env` with mode `600`. This includes `GBRAIN_POSTGRES_PASSWORD`.
 - Do not copy secret values into this node or into Git.
 - Configs changed on 2026-10-18 have backups with the suffix `.bak-20261018-2323` next to each file.
 
@@ -119,3 +135,4 @@ Only SSH (port `2018`) is open on the public IP. The Buzz relay is public throug
 - 2026-10-19: After Tailscale re-authentication, from the laptop on `100.110.183.75`: n8n returns 200, 9router 307, and Multica 200. `srv-lvs0k.taildae6a9.ts.net:5678` returns 200. SSH on the tailnet IP works. `tailscale ping` is direct in about 27 ms.
 - 2026-10-19: After the rename to `ps`, `ps.taildae6a9.ts.net` returns 200 for n8n, 307 for 9router, and 200 for Multica. The serve rules follow the new name.
 - 2026-10-19: Buzz relay from the laptop over the internet: `https://ps.taildae6a9.ts.net/_readiness` returns 200, NIP-11 returns the relay info, and a WebSocket opens and gets the NIP-42 `AUTH` challenge.
+- 2026-10-24: gbrain from the server: `gbrain put` of a test page produced commit `9f52383` on GitHub, and `gbrain delete --force` produced commit `7c4f234`. The first sync imported 16 pages. `gbrain sources refresh default` exits 0. SSH to the public IP refused the password after many logins in a short time; SSH on the tailnet IP worked.

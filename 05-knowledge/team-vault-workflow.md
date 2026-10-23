@@ -1,7 +1,7 @@
 ---
 title: Team vault workflow (Git, gbrain, goclaw)
-updated: 2026-10-23
-status: planned, not deployed
+updated: 2026-10-24
+status: gbrain deployed on the server; goclaw not deployed
 ---
 
 # Team vault workflow
@@ -12,7 +12,8 @@ Hình dung vault là một cuốn sổ chung của công ty. GitHub giữ bản 
 
 ## Trạng thái
 
-- Chưa triển khai. Ngày 2026-10-23, vault chưa có bản clone nào trên server. Vault chỉ có trên laptop và trên GitHub (`git@github.com:doanphatvtp96-del/phat-second-brain.git`). [Source: tìm `COG-VERSION` trên server qua SSH | 2026-10-23 | confidence: high]
+- gbrain đã chạy trên server từ 2026-10-24: bản clone `/home/brain/vault` (nhánh `master`), managed mode, Git durability bật, autopilot và timer refresh 15 phút. Chưa có MCP HTTP và chưa có embedding. goclaw chưa cài. [Source: [[05-knowledge/server-services]] § gbrain | 2026-10-24 | confidence: high]
+- Nhánh mặc định trên GitHub là `main` (chỉ có commit khởi tạo). Nội dung thật nằm ở `master`. Clone phải chỉ rõ `-b master` cho đến khi nhánh mặc định được đổi.
 - Danh sách dịch vụ đang chạy, cổng, và quy ước mạng của server nằm trong [[05-knowledge/server-services]]. Sau khi cài gbrain hoặc goclaw, cập nhật ghi chép đó.
 
 ## Quyết định đã chốt
@@ -64,7 +65,8 @@ Chi tiết phía gbrain [Source: DeepWiki `garrytan/gbrain`, trang "Git Sync & M
 - Nếu GitHub từ chối push vì có commit mới, gbrain gộp commit đó trong bộ nhớ rồi push kết quả. Bước gộp không chạm vào file khác.
 - Nếu hai bên sửa cùng một file, gbrain giữ lần ghi đó với lỗi `integrate_conflict` và chờ người quyết định.
 - `gbrain sources refresh` chạy `git fetch`, tạm dừng nhận lệnh ghi mới cho đến khi hàng đợi ghi xong, rồi chạy `git merge --ff-only` và `gbrain sync`. Nếu bản clone trên server có commit chưa lên GitHub, refresh dừng với lỗi `refresh_diverged`.
-- gbrain push bằng một Personal Access Token lưu trong file. `gbrain sources harden` gắn token vào repo, cài cron refresh, và đặt `pull.ff=only`.
+- gbrain push bằng deploy key SSH chỉ có quyền vào repo vault (`/home/brain/.ssh/vault_deploy`). Ở managed mode không dùng `gbrain sources harden`; Git durability bật bằng `gbrain sources writer git-durability default --enable`. [Source: [[05-knowledge/server-services]] § gbrain | 2026-10-24 | confidence: high]
+- Autopilot của gbrain không tự kéo commit mới. Timer systemd `gbrain-refresh.timer` chạy `gbrain sources refresh default` 15 phút một lần. [Source: kiểm tra mã `autopilot*.ts` của gbrain 0.60.405.0 và `skills/cron-scheduler/SKILL.md` | 2026-10-24 | confidence: high]
 
 Quy tắc trên laptop:
 
@@ -128,7 +130,7 @@ Mẫu và dấu vết người ghi:
 ## Bảo mật tối thiểu
 
 - Agent goclaw không có tool `exec`. Nó chỉ có các tool MCP của gbrain. Lý do: tin nhắn của nhân viên có thể chứa lệnh giả (prompt injection).
-- Token GitHub chỉ nằm ở gbrain. Dùng fine-grained PAT chỉ cấp quyền vào repo vault, quyền `Contents: read and write`. Lưu file với mode `600` trong `/root/service-secrets/` hoặc trong home của user chạy gbrain.
+- Quyền push GitHub chỉ nằm ở gbrain: một deploy key có quyền ghi, chỉ vào repo vault, trong `/home/brain/.ssh/`.
 - gbrain và goclaw bind `127.0.0.1`, mở qua `tailscale serve` theo quy ước trong [[05-knowledge/server-services]]. Không publish cổng ra `0.0.0.0`.
 - Nhóm Telegram dùng chính sách `allowlist`. Bot chỉ trả lời khi được @mention (mặc định của goclaw).
 - `.env` của vault nằm trong `.gitignore`, nên không lên server qua Git. Giữ nguyên như vậy.
@@ -142,7 +144,7 @@ Tài nguyên server ngày 2026-10-23: 4 CPU, 7.8 GB RAM (khoảng 6 GB còn tr�
 - [ ] **Giấy phép goclaw.** goclaw không khóa kênh chat bằng license key, nên Telegram chạy được ngay sau khi cài. Mã nguồn không có `license_gate` hay kiểm tra license key nào. [Source: tìm `license` trong mã Go của `nextlevelbuilder/goclaw`, branch `dev` commit `1fc98bcd` | 2026-10-23 | confidence: high]. Tuy vậy, goclaw dùng giấy phép CC BY-NC 4.0, không cho dùng thương mại. Dùng bot cho việc của công ty có thể bị coi là dùng thương mại. Chủ vault cần quyết định, hoặc hỏi nhóm phát triển goclaw, trước khi cho nhân viên dùng. [Source: goclaw `LICENSE` và `README.md` § License | 2026-10-23 | confidence: high]
 - [ ] API key cho embedding và LLM của gbrain. gbrain hỗ trợ Voyage (mặc định), OpenAI, OpenRouter, Azure OpenAI, Ollama. Tính năng tổng hợp dùng `ANTHROPIC_API_KEY` hoặc `OPENAI_API_KEY`.
 - [ ] API key cho LLM của goclaw.
-- [ ] Fine-grained PAT cho repo vault.
+- [x] Deploy key cho repo vault (thêm ngày 2026-10-24, tài khoản `doanphatvtp96-del`).
 - [ ] Bot Telegram mới (qua @BotFather) và nhóm Telegram của nhân viên.
 
 ### Bước 1: Cài gbrain trên server
@@ -151,11 +153,25 @@ Tài nguyên server ngày 2026-10-23: 4 CPU, 7.8 GB RAM (khoảng 6 GB còn tr�
 - Chạy Postgres có pgvector bằng Docker Compose trong `/opt/services/gbrain`, image `pgvector/pgvector:pg17`, bind `127.0.0.1`. Không dùng chung Postgres của Multica.
 - Cài Bun 1.4.0 trở lên và gbrain: `bun install -g github:garrytan/gbrain`. Không cài gói `gbrain` từ npm, vì đó là dự án khác.
 - `gbrain init --prefer-postgres` với `GBRAIN_DATABASE_URL`.
-- Clone vault vào home của user gbrain. Kết nối bản clone làm nguồn `default` ở managed mode, bật git durability, chạy `gbrain sources harden` với file PAT.
+- Clone vault vào home của user gbrain. Kết nối bản clone làm nguồn `default` ở managed mode và bật git durability. Đã làm ngày 2026-10-24; các lệnh thật nằm ở § Cách đã cài managed mode.
 - `gbrain autopilot --install`. Đặt API key trong `~/.gbrain/env` (mode `600`).
 - `gbrain serve --http --port 3131 --bind 127.0.0.1 --public-url <tailnet https URL>`, chạy bằng systemd. Mở qua `tailscale serve --https=<cổng>` để có URL HTTPS cho OAuth.
 - Tạo client OAuth cho goclaw với scope `read,write` và giới hạn thư mục ghi (`--bound-slug-prefixes`). Tạo client riêng cho Claude Code trên laptop.
 - Nghiệm thu: từ Claude Code trên laptop, gọi `search` và `get_page` qua MCP và nhận đúng trang. Gọi `put_page` tạo một trang thử, thấy commit mới trên GitHub, rồi xóa trang thử. Push một thay đổi từ laptop và thấy nó trong `search` sau lần refresh kế tiếp.
+
+### Cách đã cài managed mode
+
+Ngày 2026-10-24, gbrain 0.60.405.0. `gbrain init --url ... --non-interactive --no-embedding` tự bật managed mode, nhưng nguồn `default` trỏ vào một thư mục trống không có Git. Rebind thẳng (`sources set-path` hoặc `writer claim`) bị từ chối, nên đã làm theo thứ tự sau, đọc `admin_state` mới từ `gbrain sources writer status --json` trước mỗi lệnh:
+
+1. Sao lưu database bằng `pg_dump -Fc`.
+2. `gbrain sources writer deactivate --admin-intent writer_deactivate --expected-state <admin_state>` (brain về classic mode).
+3. `gbrain sources set-path default /home/brain/vault`.
+4. `gbrain sources writer claim default --brain host --path /home/brain/vault --admin-intent writer_claim --expected-state <admin_state>`.
+5. `gbrain sources writer git-durability default --enable --admin-intent writer_git_durability --expected-state <admin_state>`. Lệnh này chạy thử `git push --dry-run` trước.
+6. `gbrain sources writer activate --brain host --confirm-quiesced --admin-intent writer_activate --expected-state <admin_state>`.
+7. `gbrain sync --source default --no-pull`, rồi `gbrain autopilot --install --target linux-systemd --repo /home/brain/vault --yes`, rồi bật `gbrain-refresh.timer`.
+
+Bước 5 chèn một đoạn quy tắc vào `AGENTS.md`. Đoạn đó dùng cây thư mục của gbrain và cấm pull, nên đã bị bỏ bằng `git restore AGENTS.md` trong bản clone trên server.
 
 ### Bước 2: Viết bộ quy tắc trong vault
 
@@ -188,8 +204,7 @@ Tài nguyên server ngày 2026-10-23: 4 CPU, 7.8 GB RAM (khoảng 6 GB còn tr�
 
 Các điểm sau đến từ tài liệu, chưa chạy thử. Kiểm tra trong bước 1 và bước 4, rồi sửa ghi chép này:
 
-- Lệnh chính xác để kết nối một bản clone có sẵn làm nguồn `default` ở managed mode (`gbrain sources connect`, `gbrain sources writer git-durability`, `gbrain sources harden`) và tên cờ cho file PAT.
-- gbrain có chấp nhận cấu trúc thư mục COG mà không đổi đường dẫn không.
+- gbrain chấp nhận cấu trúc thư mục COG: lần sync đầu nhập 16 trang với slug giữ nguyên đường dẫn (ví dụ `05-knowledge/server-services`). Thư mục ẩn (`.claude`, `.agents`…) và `skills/` không được nhập. File `AGENTS.md` không bao giờ thành trang. [Source: `gbrain sources resolve-path` và `gbrain list` trên server | 2026-10-24 | confidence: high]
 - gbrain có tự thêm `id` vào frontmatter của file tạo từ Obsidian không. Nếu không, mẫu trong `06-templates/` phải có `id`.
 - Cờ `--bound-slug-prefixes` có trong bản gbrain sẽ cài không.
 - gbrain có gọi được một API tương thích OpenAI qua base URL (ví dụ 9router) không. Nếu không, dùng API key trực tiếp.
