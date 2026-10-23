@@ -17,6 +17,7 @@ COG runs in two environments: `laptop` and `server`. The `ENVIRONMENT` variable 
 - `laptop` is the macOS machine where the user edits the vault. Applications are not installed here. To work on the server from the laptop, connect over SSH with `SERVER`, `PORT`, `USERNAME`, and `PASSWORD` from `.env`. Never print these values.
 - `server` is the AlmaLinux 8 host where applications are installed and run (Docker Compose stacks in `/opt/services`). Install and deploy applications only on the server.
 - The installed services, paths, ports, and deploy commands are in `05-knowledge/server-services.md`. Read it before you change anything on the server, and update it after each install or change.
+- The team workflow for the vault (Git sync between laptop and server, gbrain, dewee, rules for new files) is in `05-knowledge/team-vault-workflow.md`. Read it before you run `git` on the vault, install gbrain or dewee, or write a skill that creates or edits vault files.
 - In zsh, `USERNAME` is a special variable. Do not `source .env` in zsh; read each value with `grep` or load it in `bash`.
 
 ## Available Commands
